@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .btn:hover { background: #357ae8; }
+        .github { background: #333; }
+        .github:hover { background: #555; }
+        .info {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .cookies { margin-top: 20px; }
+    </style>
+</head>
+<body>
+<h1>OAuth2 Authentication Test</h1>
+
+<div class="info">
+    <h3>Current Status:</h3>
+    <p id="status">Not authenticated</p>
+    <p><strong>Cookies:</strong></p>
+    <div id="cookies" class="cookies"></div>
+</div>
+
+<h3>Login Options:</h3>
+<a href="/api/oauth2/authorization/google" class="btn">
+    🔐 Login with Google
+</a>
+
+<a href="/api/oauth2/authorization/github" class="btn github">
+    🔐 Login with GitHub
+</a>
+
+<h3>Test API Endpoints:</h3>
+<button onclick="testMe()" class="btn">Test /api/v1/auth/me</button>
+<button onclick="testValidate()" class="btn">Test /api/v1/auth/validate</button>
+<button onclick="logout()" class="btn" style="background: #dc3545;">Logout</button>
+
+<h3>Response:</h3>
+<pre id="response"></pre>
+
+<script>
+    // Показать текущие cookies
+    function displayCookies() {
+        document.getElementById('cookies').innerHTML = document.cookie || 'No cookies';
+    }
+
+    // Проверить статус аутентификации при загрузке
+    async function checkAuthStatus() {
+        try {
+            const response = await fetch('/api/v1/auth/me', {
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.text();
+                document.getElementById('status').innerHTML = '✅ Authenticated: ' + data;
+            } else {
+                document.getElementById('status').innerHTML = '❌ Not authenticated';
+            }
+        } catch (error) {
+            document.getElementById('status').innerHTML = '❌ Error checking status';
+        }
+    }
+
+    // Тест /me endpoint
+    async function testMe() {
+        try {
+            const response = await fetch('/api/v1/auth/me', {
+                credentials: 'include'
+            });
+            const data = await response.text();
+            document.getElementById('response').textContent =
+                `Status: ${response.status}\nResponse: ${data}`;
+        } catch (error) {
+            document.getElementById('response').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Тест /validate endpoint
+    async function testValidate() {
+        try {
+            const response = await fetch('/api/v1/auth/validate', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.text();
+            document.getElementById('response').textContent =
+                `Status: ${response.status}\nResponse: ${data}`;
+        } catch (error) {
+            document.getElementById('response').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Logout
+    async function logout() {
+        try {
+            const response = await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            document.getElementById('response').textContent =
+                `Status: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+            checkAuthStatus();
+            displayCookies();
+        } catch (error) {
+            document.getElementById('response').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Обработка URL параметров после OAuth redirect
+    window.addEventListener('load', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            document.getElementById('response').textContent = 'OAuth2 login successful!';
+            checkAuthStatus();
+        } else if (urlParams.get('error')) {
+            document.getElementById('response').textContent = 'OAuth2 error: ' + urlParams.get('error');
+        }
+
+        displayCookies();
+        setInterval(displayCookies, 1000); // Update cookies every second
+    });
+
+    checkAuthStatus();
+</script>
+</body>
+</html>
