@@ -7,14 +7,16 @@ import com.security.fiverr.auth.model.dto.RegisterRequest;
 import com.security.fiverr.auth.service.AuthService;
 import com.security.fiverr.exception.GlobalServiceException;
 import com.security.fiverr.security.jwt.JwtService;
-import com.security.fiverr.security.userdetails.UserDetailsImpl;
 import com.security.fiverr.security.token.model.entity.RefreshToken;
 import com.security.fiverr.security.token.service.RefreshTokenService;
 import com.security.fiverr.security.token.service.TokenValidationService;
+import com.security.fiverr.security.userdetails.UserDetailsImpl;
+import com.security.fiverr.user.model.enitity.AuthProviderType;
 import com.security.fiverr.user.model.enitity.Role;
 import com.security.fiverr.user.model.enitity.User;
 import com.security.fiverr.user.repository.RoleRepository;
 import com.security.fiverr.user.repository.UserRepository;
+import com.security.fiverr.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,12 +44,13 @@ public class AuthServiceImpl implements AuthService {
     private final AuthResponseBuilder authResponseBuilder;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
+    private final UserService userService;
 
     @Transactional
     @Override
     public AuthResult register(RegisterRequest request) {
         validateEmailNotExists(request.email());
-
+        validateNotOAuthUser(request.email());
         User user = createNewUser(request);
         User savedUser = userRepository.save(user);
 
@@ -96,23 +99,48 @@ public class AuthServiceImpl implements AuthService {
 
         return createLogoutResponse();
     }
+       private void validateNotOAuthUser(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getProvider() == AuthProviderType.GOOGLE) {
+                throw new GlobalServiceException(HttpStatus.BAD_REQUEST,
+                        "User already registered with Google. Please sign in with Google.");
+            }
+        });
+    }
 
     private void validateEmailNotExists(String email) {
         if (userRepository.existsByEmail(email)) {
-            //todo change
             throw new GlobalServiceException(HttpStatus.BAD_REQUEST, "Email already exists!");
         }
     }
 
     private User createNewUser(RegisterRequest request) {
         Role userRole = roleRepository.findByName(request.role())
-                .orElseThrow(() -> new GlobalServiceException(HttpStatus.NOT_FOUND,"Role not found: " + request.role()));
+                .orElseThrow(() -> new GlobalServiceException(HttpStatus.NOT_FOUND, "Role not found: " + request.role()));
         return User.builder()
                 .username(request.email())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of(userRole)) //fixme or base role or set of roles
-                .enabled(true) //fixme or false if needs to be activated via email
+                .provider(AuthProviderType.LOCAL)
+                .roles(Set.of(userRole))
+                .enabled(true)
+                .emailVerified(false)
+                .build();
+    }
+
+    private User createOAuthUser(String email, String name, String providerId) {
+        Role userRole = userService.getDefaultRole();
+
+        return User.builder()
+                .username(email)
+                .email(email)
+                .name(name)
+                .password("")
+                .provider(AuthProviderType.GOOGLE)
+                .providerId(providerId)
+                .enabled(true)
+                .emailVerified(true)
+                .roles(Set.of(userRole))
                 .build();
     }
 

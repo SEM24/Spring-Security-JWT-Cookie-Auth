@@ -25,11 +25,9 @@ public class User {
     @Size(max = 50)
     private String email;
 
-    @NotBlank
     @Size(max = 40)
     private String username;
 
-    @NotBlank
     @Size(max = 120)
     @Column(nullable = false)
     private String password;
@@ -40,11 +38,13 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
-    @ElementCollection
-    @CollectionTable(name = "user_oauth2_providers",
-            joinColumns = @JoinColumn(name = "user_id"))
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "provider")
-    private Set<String> oauth2Providers = new HashSet<>();
+    private AuthProviderType provider = AuthProviderType.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
 
     @Column(name = "email_verified")
     private boolean emailVerified = false;

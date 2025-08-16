@@ -3,6 +3,7 @@ package com.security.fiverr.security.config;
 import com.security.fiverr.security.jwt.JwtAccessDeniedHandler;
 import com.security.fiverr.security.jwt.JwtAuthenticationEntryPoint;
 import com.security.fiverr.security.jwt.JwtAuthenticationFilter;
+import com.security.fiverr.security.oauth2.handler.OAuth2SuccessHandler;
 import com.security.fiverr.security.userdetails.services.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,9 +35,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
-//    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-//    private final OAuth2FailureHandler oAuth2FailureHandler;
     private final UserDetailsServiceImpl userDetailsService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
     @Value("${security.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
@@ -101,13 +101,15 @@ public class SecurityConfig {
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-//                .oauth2Login(oauth2 -> oauth2
-//                        .successHandler(oAuth2SuccessHandler)
-//                        .failureHandler(oAuth2FailureHandler)
-//                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                        //todo change redirect and matcher later
+                        .failureUrl("/login?error=oauth_error")
+                )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }

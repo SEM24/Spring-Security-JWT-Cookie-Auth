@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 2.0 Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section h2 {
+            color: #4a5568;
+            margin-top: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #3367d6;
+        }
+
+        .btn-github {
+            background: #333;
+        }
+
+        .btn-github:hover {
+            background: #24292e;
+        }
+
+        .result {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+
+        .token-display {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            word-break: break-all;
+        }
+
+        .error {
+            background: #fed7d7;
+            border: 1px solid #fc8181;
+            color: #c53030;
+        }
+
+        .success {
+            background: #c6f6d5;
+            border: 1px solid #68d391;
+            color: #2f855a;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #2b6cb0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔐 OAuth 2.0 Test Page</h1>
+
+    <div class="info">
+        <strong>Test Scenarios:</strong><br>
+        1. Create local account first (via your registration endpoint)<br>
+        2. Try OAuth login - should work<br>
+        3. Try OAuth with non-existing email - should fail
+    </div>
+
+    <div class="section">
+        <h2>📧 Check User Existence</h2>
+        <input type="email" id="emailCheck" placeholder="Enter email to check if user exists">
+        <button class="btn" onclick="checkUserExists()">Check User</button>
+        <div id="userCheckResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>🚀 OAuth Login Test</h2>
+        <a href="http://localhost:8082/api/oauth2/authorization/google" class="btn">
+            🔍 Login with Google
+        </a>
+        <a href="http://localhost:8082/api/oauth2/authorization/github" class="btn btn-github">
+            🐙 Login with GitHub (later)
+        </a>
+
+        <div class="result">
+            <strong>Expected Flow:</strong>
+            1. Click button above
+            2. Redirect to Google OAuth
+            3. Grant permissions
+            4. Redirect back with token or error
+            5. Check cookies and URL parameters
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📋 OAuth Callback Result</h2>
+        <div id="callbackResult" class="result">Waiting for OAuth callback...</div>
+    </div>
+
+    <div class="section">
+        <h2>🍪 Current Cookies</h2>
+        <button class="btn" onclick="showCookies()">Show Cookies</button>
+        <div id="cookiesResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔑 Token Test</h2>
+        <button class="btn" onclick="testProtectedEndpoint()">Test Protected Endpoint</button>
+        <div id="tokenResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>🧹 Clear All Data</h2>
+        <button class="btn" onclick="clearAllData()" style="background: #e53e3e;">Clear Cookies & Storage</button>
+    </div>
+</div>
+
+<script>
+    // Check if we got redirected back from OAuth with parameters
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const error = urlParams.get('error');
+
+        const resultDiv = document.getElementById('callbackResult');
+
+        if (token) {
+            resultDiv.innerHTML = `<div class="success">
+                    <strong>✅ OAuth Success!</strong><br>
+                    Access Token: ${token}<br><br>
+                    <strong>Token Preview:</strong><br>
+                    ${formatJWT(token)}
+                </div>`;
+
+            // Store token for testing
+            sessionStorage.setItem('accessToken', token);
+        } else if (error) {
+            resultDiv.innerHTML = `<div class="error">
+                    <strong>❌ OAuth Error:</strong><br>
+                    ${decodeURIComponent(error)}
+                </div>`;
+        } else {
+            resultDiv.innerHTML = 'No OAuth callback data detected. Click OAuth button to start test.';
+        }
+    };
+
+    function formatJWT(token) {
+        try {
+            const parts = token.split('.');
+            const header = JSON.parse(atob(parts[0]));
+            const payload = JSON.parse(atob(parts[1]));
+
+            return `Header: ${JSON.stringify(header, null, 2)}
+
+Payload: ${JSON.stringify(payload, null, 2)}`;
+        } catch (e) {
+            return 'Invalid JWT format';
+        }
+    }
+
+    async function checkUserExists() {
+        const email = document.getElementById('emailCheck').value;
+        const resultDiv = document.getElementById('userCheckResult');
+
+        if (!email) {
+            resultDiv.innerHTML = '<div class="error">Please enter an email</div>';
+            return;
+        }
+
+        try {
+            // This endpoint should be created in your controller for testing
+            const response = await fetch(`http://localhost:8082/api/v1/public/user/exists?email=${encodeURIComponent(email)}`);
+            const exists = await response.json();
+
+            if (exists) {
+                resultDiv.innerHTML = `<div class="success">✅ User with email "${email}" exists</div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">❌ User with email "${email}" does not exist</div>`;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<div class="error">Error checking user: ${error.message}</div>`;
+        }
+    }
+
+    function showCookies() {
+        const cookies = document.cookie;
+        const resultDiv = document.getElementById('cookiesResult');
+
+        if (cookies) {
+            const cookieList = cookies.split(';').map(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                return `${name}: ${value}`;
+            }).join('\n');
+
+            resultDiv.innerHTML = `Current cookies:\n${cookieList}`;
+        } else {
+            resultDiv.innerHTML = 'No cookies found';
+        }
+    }
+
+    async function testProtectedEndpoint() {
+        const token = sessionStorage.getItem('accessToken');
+        const resultDiv = document.getElementById('tokenResult');
+
+        if (!token) {
+            resultDiv.innerHTML = '<div class="error">No access token found. Complete OAuth first.</div>';
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8082/v1/protected/test', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.text();
+                resultDiv.innerHTML = `<div class="success">✅ Protected endpoint accessed successfully:\n${data}</div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">❌ Failed to access protected endpoint: ${response.status} ${response.statusText}</div>`;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<div class="error">Error testing endpoint: ${error.message}</div>`;
+        }
+    }
+
+    function clearAllData() {
+        // Clear cookies
+        document.cookie.split(";").forEach(function(c) {
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+
+        // Clear session storage
+        sessionStorage.clear();
+
+        // Clear local storage
+        localStorage.clear();
+
+        // Reload page
+        window.location.reload();
+    }
+</script>
+</body>
+</html>
