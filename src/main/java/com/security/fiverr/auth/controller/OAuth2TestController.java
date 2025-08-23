@@ -1,17 +1,17 @@
 package com.security.fiverr.auth.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 public class OAuth2TestController {
-    
-    @Autowired
-    private ClientRegistrationRepository clientRegistrationRepository;
-    
+
+    private final ClientRegistrationRepository clientRegistrationRepository;
+
     @GetMapping("/oauth2/test")
     public String testOAuth2Config() {
         try {

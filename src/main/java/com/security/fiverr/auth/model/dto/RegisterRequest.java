@@ -33,8 +33,7 @@ public record RegisterRequest(
                 regexp = "^[a-zA-Z0-9_]+$",
                 message = "Username can only contain letters, numbers, and underscores"
         )
-        String username,
-        ERole role
+        String username
 ) {
 }
 

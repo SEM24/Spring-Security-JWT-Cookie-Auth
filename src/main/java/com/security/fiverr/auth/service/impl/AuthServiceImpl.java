@@ -12,6 +12,7 @@ import com.security.fiverr.security.token.service.RefreshTokenService;
 import com.security.fiverr.security.token.service.TokenValidationService;
 import com.security.fiverr.security.userdetails.UserDetailsImpl;
 import com.security.fiverr.user.model.enitity.AuthProviderType;
+import com.security.fiverr.user.model.enitity.ERole;
 import com.security.fiverr.user.model.enitity.Role;
 import com.security.fiverr.user.model.enitity.User;
 import com.security.fiverr.user.repository.RoleRepository;
@@ -99,7 +100,8 @@ public class AuthServiceImpl implements AuthService {
 
         return createLogoutResponse();
     }
-       private void validateNotOAuthUser(String email) {
+
+    private void validateNotOAuthUser(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getProvider() == AuthProviderType.GOOGLE) {
                 throw new GlobalServiceException(HttpStatus.BAD_REQUEST,
@@ -115,8 +117,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private User createNewUser(RegisterRequest request) {
-        Role userRole = roleRepository.findByName(request.role())
-                .orElseThrow(() -> new GlobalServiceException(HttpStatus.NOT_FOUND, "Role not found: " + request.role()));
+        //Role hardcoded since it's registration
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new GlobalServiceException(HttpStatus.NOT_FOUND, "Role not found: "));
         return User.builder()
                 .username(request.email())
                 .email(request.email())
