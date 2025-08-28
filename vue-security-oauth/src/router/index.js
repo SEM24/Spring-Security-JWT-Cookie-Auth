@@ -31,6 +31,12 @@ const router = createRouter({
       component: UserPage,
       meta: {requiresAuth: true}
     },
+    // {
+    //   path: '/composition/dashboard',
+    //   name: 'composition-dashboard',
+    //   component: UserPageNew,
+    //   meta: {requiresAuth: true}
+    // },
     {
       path: '/oauth/callback',
       name: 'oauth',

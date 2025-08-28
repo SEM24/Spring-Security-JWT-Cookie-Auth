@@ -7,7 +7,7 @@
   </div>
 </template>
 
-<style scoped>
+<style>
 html, body, #app {
   margin: 0;
   padding: 0;

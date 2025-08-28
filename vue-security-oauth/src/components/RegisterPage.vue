@@ -170,7 +170,7 @@ export default {
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 0;
-  width: 70vw;
+  width: 100vw;
 }
 
 .auth-container {

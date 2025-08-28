@@ -1,7 +1,8 @@
 <template>
   <div>
-    <h2>Home Page</h2>
-    <RouterLink to="/signin">Go to Auth</RouterLink>
+    <h1>Home Page</h1>
+<!--    <RouterLink to="/signin">Go to Auth</RouterLink>-->
+    <my-button @click="$router.push('/signin')">Go to Auth</my-button>
   </div>
 </template>
 
