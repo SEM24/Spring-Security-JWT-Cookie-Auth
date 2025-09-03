@@ -1,3 +1,8 @@
+CREATE TABLE IF NOT EXISTS roles (
+                                     id SERIAL PRIMARY KEY,
+                                     name VARCHAR(50) UNIQUE NOT NULL
+    );
+
 INSERT INTO roles (name)
 SELECT 'ROLE_USER'
     WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ROLE_USER');
